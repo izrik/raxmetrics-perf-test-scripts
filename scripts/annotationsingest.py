@@ -62,18 +62,19 @@ class AnnotationsIngestThread(AbstractThread):
     _count = 0
     _lock = threading.RLock()
 
-    def _record_metrics_sent(self, delta):
+    @classmethod
+    def _record_metrics_sent(cls, delta):
         def record_metrics_sent_sync():
-            self._count += delta
             f = open('annotation_count.txt', 'w')
             try:
-                f.write(str(self._count))
-                f.write('\n')
+                prev = cls._count
+                cls._count += delta
+                f.write('%s = %s + %s\n' % (str(cls._count), prev, delta))
             finally:
                 f.close()
 
-        self._lock.acquire()
+        cls._lock.acquire()
         try:
             record_metrics_sent_sync()
         finally:
-            self._lock.release()
+            cls._lock.release()
