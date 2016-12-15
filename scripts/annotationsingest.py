@@ -65,9 +65,12 @@ class AnnotationsIngestThread(AbstractThread):
     def _record_metrics_sent(self, delta):
         def record_metrics_sent_sync():
             self._count += delta
-            with open('annotation_count.txt', 'w') as f:
+            f = open('annotation_count.txt', 'w')
+            try:
                 f.write(str(self._count))
                 f.write('\n')
+            finally:
+                f.close()
 
         self._lock.acquire()
         try:
