@@ -1,4 +1,5 @@
 import random
+import threading
 
 try:
     from com.xhaus.jyson import JysonCodec as json
@@ -85,4 +86,22 @@ class IngestThread(AbstractThread):
         result = self.request.POST(url, payload, headers)
         if result.getStatusCode() >= 400:
             logger("IngestThread Error: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
+        if 200 <= result.getStatusCode() < 300:
+            self._record_metrics_sent(len(tenant_metric_id_values))
         return result
+
+    _count = 0
+    _lock = threading.RLock()
+
+    def _record_metrics_sent(self, delta):
+        def record_metrics_sent_sync():
+            self._count += delta
+            with open('ingest_count.txt', 'w') as f:
+                f.write(str(self._count))
+                f.write('\n')
+
+        self._lock.acquire()
+        try:
+            record_metrics_sent_sync()
+        finally:
+            self._lock.release()
