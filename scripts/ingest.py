@@ -7,13 +7,12 @@ try:
 except ImportError:
     import json
 from abstract_generator import AbstractGenerator, generate_metric_name
-from throttling_group import NullThrottlingGroup
+from request import Request
 
 try:
     from HTTPClient import NVPair
 except ImportError:
     from nvpair import NVPair
-
 
 RAND_MAX = 982374239
 
@@ -28,7 +27,6 @@ def int_from_tenant(tenant_id):
 
 
 class IngestGenerator(AbstractGenerator):
-
     units_map = {
         0: 'minutes',
         1: 'hours',
@@ -73,7 +71,7 @@ class IngestGenerator(AbstractGenerator):
             tenantId = self.user.get_tenant_id()
         return "%s/v2.0/%s/ingest/multi" % (self.config['url'], str(tenantId))
 
-    def make_request(self, logger, time, tenant_metric_id_values=None):
+    def generate_request(self, logger, time, tenant_metric_id_values=None):
         if tenant_metric_id_values is None:
             tenant_metric_id_values = []
             for i in xrange(self.config['ingest_batch_size']):
@@ -84,12 +82,30 @@ class IngestGenerator(AbstractGenerator):
                 tmv = [tenant_id, metric_id, value]
                 tenant_metric_id_values.append(tmv)
         payload = self.generate_payload(time, tenant_metric_id_values)
-        headers = ( NVPair("Content-Type", "application/json"), )
+        headers = (NVPair("Content-Type", "application/json"),)
         url = self.ingest_url()
-        result = self.request.POST(url, payload, headers)
-        if 200 <= result.getStatusCode() < 300:
+        return Request(url, 'POST', headers, payload,
+                       extra=tenant_metric_id_values)
+
+    def send_request(self, request):
+        return self.request.POST(request.url, request.body, request.headers)
+
+    def after_request_sent(self, request, response, logger, time):
+        tenant_metric_id_values = request.extra
+        if response.getStatusCode() >= 400:
+            logger("IngestGenerator Error: status code=" + str(
+                response.getStatusCode()) + " response=" + response.getText())
+        if 200 <= response.getStatusCode() < 300:
             self.count_raw_metrics(len(tenant_metric_id_values))
-        return result
+        return response
+
+    def make_request(self, logger, time, tenant_metric_id_values=None):
+
+        request = self.generate_request(logger, time, tenant_metric_id_values)
+
+        response = self.send_request(request)
+
+        return self.after_request_sent(request, response, logger, time)
 
     def count_raw_metrics(self, n):
         self.raw_ingest_counter.count(n)
