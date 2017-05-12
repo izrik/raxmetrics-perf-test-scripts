@@ -19,7 +19,8 @@ class User(object):
     logger = None
     expires = None
 
-    def __init__(self, auth_url, username, api_key, config, conn=None):
+    def __init__(self, auth_url, username, api_key, config, conn=None,
+                 logger=None):
 
         if conn is None:
             conn = Connector()
@@ -30,6 +31,12 @@ class User(object):
         self.config = config
         self.connector = conn
         self.lock = threading.RLock()
+        if logger:
+            self.logger = logger
+
+    def log(self, message):
+        if self.logger:
+            self.logger(message)
 
     def _get_data(self):
         def get_data_sync():
@@ -81,8 +88,11 @@ class User(object):
 
             catalog = resp.json()
             self.tenant_id = catalog['access']['token']['tenant']['id']
+            self.log('tenant_id: %s' % self.tenant_id)
             self.token = catalog['access']['token']['id']
+            self.log('token: %s' % self.token)
             expiration_date = catalog['access']['token']['expires']
+            self.log('expiration_date: %s' % expiration_date)
             try:
                 self.expires = datetime.datetime.strptime(expiration_date,
                                                           "%Y-%m-%dT%H:%M:%S.%fZ")
