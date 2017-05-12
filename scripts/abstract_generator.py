@@ -41,6 +41,9 @@ class AbstractGenerator(object):
     def make_request(self, logger, time):
         raise Exception("Can't create abstract generator")
 
+    def after_request_sent(self, request, response, logger):
+        pass
+
     def __init__(self, thread_num, agent_num, request, config, user=None):
 
         self.thread_num = thread_num

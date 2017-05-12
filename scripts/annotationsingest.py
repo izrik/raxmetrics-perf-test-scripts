@@ -53,9 +53,6 @@ class AnnotationsIngestGenerator(AbstractGenerator):
     def send_request(self, request):
         return self.request.POST(request.url, request.body, request.headers)
 
-    def after_request_sent(self, request, response, logger):
-        pass
-
     def make_request(self, logger, time, tenant_and_metric=None):
 
         request = self.generate_request(logger, time, tenant_and_metric)

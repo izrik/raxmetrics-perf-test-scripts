@@ -48,9 +48,6 @@ class SinglePlotQueryGenerator(AbstractQueryGenerator):
     def send_request(self, request):
         return self.request.GET(request.url)
 
-    def after_request_sent(self, request, response, logger):
-        pass
-
     def make_request(self, logger, time, tenant_id=None,
                      metric_name=None):
 
@@ -90,9 +87,6 @@ class MultiPlotQueryGenerator(AbstractQueryGenerator):
     def send_request(self, request):
         return self.request.POST(request.url, request.body, request.headers)
 
-    def after_request_sent(self, request, response, logger):
-        pass
-
     def make_request(self, logger, time, tenant_id=None, payload=None):
         request = self.generate_request(logger, time, tenant_id, payload)
         response = self.send_request(request)
@@ -123,9 +117,6 @@ class SearchQueryGenerator(AbstractQueryGenerator):
     def send_request(self, request):
         return self.request.GET(request.url)
 
-    def after_request_sent(self, request, response, logger):
-        pass
-
     def make_request(self, logger, time, tenant_id=None,
                      metric_regex=None):
         request = self.generate_request(logger, time, tenant_id, metric_regex)
@@ -148,9 +139,6 @@ class AnnotationsQueryGenerator(AbstractQueryGenerator):
 
     def send_request(self, request):
         return self.request.GET(request.url)
-
-    def after_request_sent(self, request, response, logger):
-        pass
 
     def make_request(self, logger, time, tenant_id=None):
         request = self.generate_request(logger, time, tenant_id)
