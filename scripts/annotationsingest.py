@@ -6,7 +6,7 @@ try:
 except ImportError:
     import json
 from abstract_generator import AbstractGenerator, generate_metric_name
-from throttling_group import NullThrottlingGroup
+from request import Request
 
 try:
     from HTTPClient import NVPair
@@ -32,7 +32,7 @@ class AnnotationsIngestGenerator(AbstractGenerator):
             tenant_id = self.user.get_tenant_id()
         return "%s/v2.0/%s/events" % (self.config['url'], tenant_id)
 
-    def make_request(self, logger, time, tenant_and_metric=None):
+    def generate_request(self, logger, time, tenant_and_metric=None):
 
         if tenant_and_metric is None:
             tenant_id = self.user.get_tenant_id()
@@ -47,5 +47,19 @@ class AnnotationsIngestGenerator(AbstractGenerator):
         payload = self.generate_payload(time, metric_id)
 
         headers = ( NVPair("Content-Type", "application/json"), )
-        result = self.request.POST(url, payload, headers)
-        return result
+
+        return Request(url, 'POST', headers, payload, extra=tenant_and_metric)
+
+    def send_request(self, request):
+        return self.request.POST(request.url, request.body, request.headers)
+
+    def after_request_sent(self, request, response, logger):
+        return response
+
+    def make_request(self, logger, time, tenant_and_metric=None):
+
+        request = self.generate_request(logger, time, tenant_and_metric)
+
+        response = self.send_request(request)
+
+        return self.after_request_sent(request, response, logger)

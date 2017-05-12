@@ -5,7 +5,7 @@ try:
 except ImportError:
     import json
 from abstract_generator import AbstractGenerator, generate_metric_name
-from throttling_group import NullThrottlingGroup
+from request import Request
 
 try:
     from HTTPClient import NVPair
@@ -29,8 +29,7 @@ class AbstractQueryGenerator(AbstractGenerator):
 class SinglePlotQueryGenerator(AbstractQueryGenerator):
     query_interval_name = 'singleplot_query_weight'
 
-    def make_request(self, logger, time, tenant_id=None,
-                     metric_name=None):
+    def generate_request(self, logger, time, tenant_id=None, metric_name=None):
         if tenant_id is None:
             tenant_id = self.user.get_tenant_id()
         if metric_name is None:
@@ -44,8 +43,20 @@ class SinglePlotQueryGenerator(AbstractQueryGenerator):
             self.config['query_url'],
             tenant_id, metric_name, frm,
             to, resolution)
-        result = self.request.GET(url)
-        return result
+        return Request(url, 'GET', extra=(tenant_id, metric_name))
+
+    def send_request(self, request):
+        return self.request.GET(request.url)
+
+    def after_request_sent(self, request, response, logger):
+        return response
+
+    def make_request(self, logger, time, tenant_id=None,
+                     metric_name=None):
+
+        request = self.generate_request(logger, time, tenant_id, metric_name)
+        response = self.send_request(request)
+        return self.after_request_sent(request, response, logger)
 
 
 class MultiPlotQueryGenerator(AbstractQueryGenerator):
@@ -60,7 +71,7 @@ class MultiPlotQueryGenerator(AbstractQueryGenerator):
         ]
         return json.dumps(metrics_list)
 
-    def make_request(self, logger, time, tenant_id=None, payload=None):
+    def generate_request(self, logger, time, tenant_id=None, payload=None):
         if tenant_id is None:
             tenant_id = self.user.get_tenant_id()
         if payload is None:
@@ -73,8 +84,18 @@ class MultiPlotQueryGenerator(AbstractQueryGenerator):
             tenant_id, frm,
             to, resolution)
         headers = ( NVPair("Content-Type", "application/json"), )
-        result = self.request.POST(url, payload, headers)
-        return result
+        return Request(url, 'POST', headers, payload, extra=tenant_id)
+
+    def send_request(self, request):
+        return self.request.POST(request.url, request.body, request.headers)
+
+    def after_request_sent(self, request, response, logger):
+        return response
+
+    def make_request(self, logger, time, tenant_id=None, payload=None):
+        request = self.generate_request(logger, time, tenant_id, payload)
+        response = self.send_request(request)
+        return self.after_request_sent(request, response, logger)
 
 
 class SearchQueryGenerator(AbstractQueryGenerator):
@@ -86,8 +107,8 @@ class SearchQueryGenerator(AbstractQueryGenerator):
             self.config)
         return ".".join(metric_name.split('.')[0:-1]) + ".*"
 
-    def make_request(self, logger, time, tenant_id=None,
-                     metric_regex=None):
+    def generate_request(self, logger, time, tenant_id=None,
+                         metric_regex=None):
         if tenant_id is None:
             tenant_id = self.user.get_tenant_id()
         if metric_regex is None:
@@ -95,20 +116,41 @@ class SearchQueryGenerator(AbstractQueryGenerator):
         url = "%s/v2.0/%s/metrics/search?query=%s" % (
             self.config['query_url'],
             tenant_id, metric_regex)
-        result = self.request.GET(url)
-        return result
+        return Request(url, 'GET', extra=(tenant_id,metric_regex))
+
+    def send_request(self, request):
+        return self.request.GET(request.url)
+
+    def after_request_sent(self, request, response, logger):
+        return response
+
+    def make_request(self, logger, time, tenant_id=None,
+                     metric_regex=None):
+        request = self.generate_request(logger, time, tenant_id, metric_regex)
+        response = self.send_request(request)
+        return self.after_request_sent(request, response, logger)
 
 
 class AnnotationsQueryGenerator(AbstractQueryGenerator):
     query_interval_name = 'annotations_query_weight'
 
-    def make_request(self, logger, time, tenant_id=None):
+    def generate_request(self, logger, time, tenant_id=None):
         if tenant_id is None:
             tenant_id = self.user.get_tenant_id()
         to = time
         frm = time - self.one_day
         url = "%s/v2.0/%s/events/getEvents?from=%d&until=%d" % (
             self.config['query_url'], tenant_id, frm, to)
-        result = self.request.GET(url)
-        return result
+        return Request(url, 'GET', extra=(tenant_id,))
+
+    def send_request(self, request):
+        return self.request.GET(request.url)
+
+    def after_request_sent(self, request, response, logger):
+        return response
+
+    def make_request(self, logger, time, tenant_id=None):
+        request = self.generate_request(logger, time, tenant_id)
+        response = self.send_request(request)
+        return self.after_request_sent(request, response, logger)
 
