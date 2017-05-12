@@ -97,7 +97,6 @@ class IngestGenerator(AbstractGenerator):
                 response.getStatusCode()) + " response=" + response.getText())
         if 200 <= response.getStatusCode() < 300:
             self.count_raw_metrics(len(tenant_metric_id_values))
-        return response
 
     def make_request(self, logger, time, tenant_metric_id_values=None):
 
@@ -105,7 +104,8 @@ class IngestGenerator(AbstractGenerator):
 
         response = self.send_request(request)
 
-        return self.after_request_sent(request, response, logger, time)
+        self.after_request_sent(request, response, logger, time)
+        return response
 
     def count_raw_metrics(self, n):
         self.raw_ingest_counter.count(n)

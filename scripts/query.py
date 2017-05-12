@@ -49,14 +49,15 @@ class SinglePlotQueryGenerator(AbstractQueryGenerator):
         return self.request.GET(request.url)
 
     def after_request_sent(self, request, response, logger):
-        return response
+        pass
 
     def make_request(self, logger, time, tenant_id=None,
                      metric_name=None):
 
         request = self.generate_request(logger, time, tenant_id, metric_name)
         response = self.send_request(request)
-        return self.after_request_sent(request, response, logger)
+        self.after_request_sent(request, response, logger)
+        return response
 
 
 class MultiPlotQueryGenerator(AbstractQueryGenerator):
@@ -90,12 +91,13 @@ class MultiPlotQueryGenerator(AbstractQueryGenerator):
         return self.request.POST(request.url, request.body, request.headers)
 
     def after_request_sent(self, request, response, logger):
-        return response
+        pass
 
     def make_request(self, logger, time, tenant_id=None, payload=None):
         request = self.generate_request(logger, time, tenant_id, payload)
         response = self.send_request(request)
-        return self.after_request_sent(request, response, logger)
+        self.after_request_sent(request, response, logger)
+        return response
 
 
 class SearchQueryGenerator(AbstractQueryGenerator):
@@ -122,13 +124,14 @@ class SearchQueryGenerator(AbstractQueryGenerator):
         return self.request.GET(request.url)
 
     def after_request_sent(self, request, response, logger):
-        return response
+        pass
 
     def make_request(self, logger, time, tenant_id=None,
                      metric_regex=None):
         request = self.generate_request(logger, time, tenant_id, metric_regex)
         response = self.send_request(request)
-        return self.after_request_sent(request, response, logger)
+        self.after_request_sent(request, response, logger)
+        return response
 
 
 class AnnotationsQueryGenerator(AbstractQueryGenerator):
@@ -147,10 +150,11 @@ class AnnotationsQueryGenerator(AbstractQueryGenerator):
         return self.request.GET(request.url)
 
     def after_request_sent(self, request, response, logger):
-        return response
+        pass
 
     def make_request(self, logger, time, tenant_id=None):
         request = self.generate_request(logger, time, tenant_id)
         response = self.send_request(request)
-        return self.after_request_sent(request, response, logger)
+        self.after_request_sent(request, response, logger)
+        return response
 
